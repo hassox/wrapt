@@ -13,7 +13,6 @@ describe Wrapt do
         else
           msg
         end
-
         Rack::Response.new(out).finish
       end
     end
@@ -46,7 +45,11 @@ describe Wrapt do
     end
 
     it "should provide me with the Dir.pwd/layouts as the default location to find layouts" do
-      @wrapt.layout_dirs.should == [File.join(Dir.pwd, "layouts")]
+      @wrapt.layout_dirs.should == [
+        File.join(Dir.pwd, "layouts"),
+        File.join(Dir.pwd, "views/layouts"),
+        File.join(Dir.pwd, "app/views/layouts")
+      ]
     end
 
     it "should use the 'application' template by default" do
@@ -161,9 +164,9 @@ describe Wrapt do
     before(:all) do
       unless defined?(WraptApp)
         WraptApp = lambda do |e|
-          wrapt = e['layout']
-          wrapt.content = $msg || "ok"
-          Rack::Response.new(wrapt).finish
+          layout = e['layout']
+          layout.content = $msg || "ok"
+          Rack::Response.new(layout).finish
         end
       end
     end
@@ -173,6 +176,7 @@ describe Wrapt do
         w.layout_dirs = layouts_dirs
         w.default_template = "wrapper"
       end
+
       @env = Rack::MockRequest.env_for("/")
       @wrapt.call(@env)
       @layout = @env['layout']
@@ -227,6 +231,15 @@ describe Wrapt do
 
     it "should provide me with the wrapped layout with to_s" do
       @layout.to_s.should == @layout.map.join
+    end
+
+    it "should yield multiple contents" do
+      @layout.content = "Main Content"
+      @layout.set_content_for(:foo, "Foo Content")
+      @layout.template_name = "multiple"
+      result = @layout.to_s
+      result.should include("<div class='content'>Main Content</div>")
+      result.should include("<div class='foo'>Foo Content</div>")
     end
   end
 end
