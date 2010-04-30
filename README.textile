@@ -1,0 +1,162 @@
+h1. Wrapt
+
+Wrapt is a rack middleware that provides facilities to any rack application for wrapping the content in a consistent layout.
+
+Wrapt is intended to sit out the front of a rack graph (but doesn't have to), and is only activated when a downstream application asks to be wrapped in a layout. This means that disparate rack applications that have been mounted, may share the same layout and appear to belong to a single application.
+
+Wrapt injects a layout object into the Rack environment which is idle until activated.  To activeate, just assign it some content, and return it as the body portion of your response.
+
+h2. Example
+
+Declare your middleware stack
+<pre><code lang='ruby'>use Wrapt
+run MyApp
+</code></pre>
+
+Get your application using the wrapt layout
+<pre><code>class MyApp
+  def self.call(env)
+    new.call(env)
+  end
+
+  def call(env)
+    layout = env['layout']
+    layout.content = "This is the content of my app"
+    Rack::Response.new(layout).finish
+  end
+end
+</code></pre>
+
+Say our layout file looked like this:
+
+<pre><code>%html
+  %body
+    = yield
+</code></pre>
+
+We would end up with:
+
+<pre><code lang='html'><html>
+  <body>
+    This is the content of my app
+  </body>
+</html>
+</code></pre>
+
+h2. Layout Files
+
+Wrapt is built on "Tilt":http://github.com/rtomayko/tilt Any tilt compatible template is usable.
+
+A layout file is one that is constructed for use with a layout.  To fill in the content into the layout template, you 'yield'.
+
+h3. Template Location
+
+By default, wrapt will look in the following palces for your layout templates:
+
+* layouts
+* views/layouts
+* app/views/layouts
+
+You can customize this by passing an array of directory locations to wrapt when declaring the middleware.
+
+<pre><code>use Wrapt do |wrapt|
+  wrapt.layout_dirs = ["/path/to/my/layouts", "/fallback/path/to/layouts"]
+end
+</code></pre>
+
+Directories are checked in order and the first template found is used.
+
+h3. Template Naming
+
+Templates follow a simple naming convention.
+
+<pre><code><template_name>.<format>.<template_type></code></pre>
+
+For example.  The default template name is "application" with a default format of "html".  This will match anything then of the form "application.html"
+
+And will render the layout, inserting the content in the right spot.
+
+You can define the name of the default template when declaring the middleware
+
+<pre><code>use Wrapt do |wrapt|
+  wrapt.default_template = "my_default_layout"
+end
+</code></pre>
+
+You can also select the layout to use inside a request.  The following sets the layout for all downstream applications as 'special' (unless it's changed downstream')
+
+<pre><code>def call(env)
+  layout = env['layout']
+
+  layout.template_name = "special"
+  app.call(env)
+end
+</code></pre>
+
+h3. Format
+
+Layouts are associated with a format.  By default the format is html.  Tempaltes are selected by their name with <name>.<format>.<template_type>.
+
+You can select a default format when declaring the middleware
+
+<pre><code>use Wrapt do |wrapt|
+  wrapt.default_format = :json
+end
+</code></pre>
+
+Or in the request
+<pre><code>def call(env)
+  layout = env['layout']
+  layout.format = :json
+  layout.content = {:my => "hash"}.to_json
+end
+</code></pre>
+
+h3. Content Sections
+
+Wrapt allows you to have different sections of content.  To declare this:
+
+<pre><code>layout.content = "foo" # main content
+layout.set_content_for(:nav, "some navigation")
+</code></pre>
+
+Once that content is set, you may then use it in the layout by yielding to the layout.
+
+<pre><code>%h1 My Layout
+= yield # yields the main content
+
+%nav
+  = yield :nav # yields the content with the label :nav
+</code></pre>
+
+h3. Helpers
+
+You can include any helpers you need into the layout by including them into
+
+Wrapt::Helpers
+
+h3. Wrapping content on demand
+
+You can use the layouter object to wrap content on demand
+
+<pre><code>def call(env)
+  layout = env['layout']
+  wrapped_content = layout.wrap("my content", :layout => :inner_layout, :format => :json)
+  layout.content = wrapped_content
+  Rack::Response(layout).finish
+end
+</code></pre>
+
+h2. Note on Patches/Pull Requests
+
+* Fork the project.
+* Make your feature addition or bug fix.
+* Add tests for it. This is important so I don't break it in a
+  future version unintentionally.
+* Commit, do not mess with rakefile, version, or history.
+  (if you want to have your own version, that is fine but bump version in a commit by itself I can ignore when I pull)
+* Send me a pull request. Bonus points for topic branches.
+
+h2. Copyright
+
+Copyright (c) 2010 Daniel Neighman. See LICENSE for details.

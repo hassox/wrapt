@@ -53,6 +53,12 @@ class Wrapt
       layout.map.join
     end
 
+    def dup
+      dupped = super
+      dupped.instance_variable_set('@content_for', Hashie::Mash.new)
+      dupped
+    end
+
     # Set the content for the layout for the given label
     # @param [Symbol] label The label to identify the content to insert
     # @param [String] content The content to set for this label
@@ -112,7 +118,7 @@ class Wrapt
       template = @wrapt.template(template, opts)
 
       output = if template
-        template.render do |*args|
+        template.render(LayoutContext.new) do |*args|
           label = args.first || :content
           content_for[label]
         end
