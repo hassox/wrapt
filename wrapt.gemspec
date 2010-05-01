@@ -3,7 +3,7 @@ require 'bundler'
 
 Gem::Specification.new do |s|
   s.name = %q{wrapt}
-  s.version = "0.1.2"
+  s.version = "0.1.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Daniel Neighman"]
@@ -16,8 +16,9 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.6}
 
-  s.files = Dir[File.join(Dir.pwd, "**/*")]
+  s.files = Dir[File.join('.', "**/*")]
 
-  s.add_bundler_dependencies
+  s.add_dependency 'tilt'
+  s.add_dependency 'hashie'
 end
 
