@@ -11,5 +11,5 @@ group(:test) do
   gem 'ZenTest'
   gem 'haml'
   gem 'rake'
-  gem 'jeweler'
+  gem 'rack-test'
 end

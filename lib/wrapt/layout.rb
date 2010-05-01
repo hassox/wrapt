@@ -2,10 +2,12 @@ class Wrapt
   class Layout
     include Enumerable
     attr_accessor :wrapt, :env, :template_name, :format
+    attr_reader   :request
 
     def initialize(wrapt, env)
       @env = env
       @wrapt = wrapt
+      @request = Rack::Request.new(@env)
       @content_for = Hashie::Mash.new
     end
 
@@ -50,7 +52,7 @@ class Wrapt
       layout.template_name  = opts[:layout] if opts[:layout]
 
       layout.content = content
-      layout.map.join
+      layout.render_layout(false)
     end
 
     def dup
@@ -111,6 +113,15 @@ class Wrapt
     # The interface for rack.
     # @api public
     def each
+      result = render_layout(@wrapt.ignore_layout?(env))
+      yield result
+      result
+    end
+
+    # @api private
+    def render_layout(ignore_layout = false)
+      return content_for[:content] if ignore_layout
+
       opts = {}
       opts[:format]   ||= format
       template = template_name
@@ -125,7 +136,6 @@ class Wrapt
       else
         content_for[:content]
       end
-      yield output
       output
     end
   end

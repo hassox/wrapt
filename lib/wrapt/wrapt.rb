@@ -27,6 +27,8 @@
 # If you don't want a layout, simply don't use the wrapt object.
 class Wrapt
 
+  IGNORE_LAYOUT = lambda{|e| false}
+
   # Wrapt is initialized as middleware in a Rack stack
   # @block the wrapt instance is passed to the block for further configuration
   #   You can set layout template directories,
@@ -55,6 +57,39 @@ class Wrapt
   # @api private
   def master?
     !!@master
+  end
+
+  # Wrapt allows you to ignore layouts from the client side.
+  #
+  # This may be useful for esi, or ajax, where you want the content, but not the layout
+  #
+  # @block Provide a block to act as a guard for ignoring the layout from the client side.
+  # The block is provided with the Rack environment from the request
+  #
+  # @see Wrapt#ignore_layout?
+  # @api public
+  def ignore_layout(&block)
+    @ignore_layout = block
+  end
+
+  # Checks to see if the layout should be ignored for this request.
+  #
+  # @example
+  #   use Wrapt do |wrapt|
+  #     wrapt.ignore_layout do |env|
+  #       request = Rack::Request.new(env)
+  #       params["apply_layout"] == false
+  #     end
+  #   end
+  #   run MyApp
+  #
+  # GET "/?apply_layout=false" # Layout is ignored
+  #
+  # @see Wrapt#ignore_layout
+  # @api public
+  def ignore_layout?(env)
+    @ignore_layout ||= IGNORE_LAYOUT
+    @ignore_layout.call(env)
   end
 
   def call(env)

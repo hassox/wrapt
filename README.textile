@@ -129,6 +129,29 @@ Once that content is set, you may then use it in the layout by yielding to the l
   = yield :nav # yields the content with the label :nav
 </code></pre>
 
+h3. Preventing Layouts from the Client
+
+Wrapt allows you to prevent layouts from being applied when requested by the client.
+
+This means that when using ajax, or esi, you can request the content without layout.  There is no magic formula for this, because there could be any number of ways to provide this facility.  Instead of prescribing a method to allow requests to not include the layout, you may configure wrapt with a block which checks the request.  From there you can choose to ignore the layout request.
+
+h4. Example
+
+<pre><code>
+use Wrapt do |wrapt|
+  wrapt.ignore_layout do |env|
+    request = Rack::Request.new(env)
+    request.params['ignore_layout'] == 'true'
+  end
+end
+
+run MyApp
+</code></pre>
+
+Now when you make a request to any url, you may tell it to ignore the layout by including an 'ignore_layout=true' on the url.
+
+GET '/foo?ignore_layout=true'
+
 h3. Helpers
 
 You can include any helpers you need into the layout by including them into

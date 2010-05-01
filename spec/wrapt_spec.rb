@@ -71,6 +71,22 @@ describe Wrapt do
       @wrapt.default_format.should == :html
     end
 
+    it "should not ignore the layout by default" do
+      env = Rack::MockRequest.env_for("/")
+      @wrapt.ignore_layout?(env).should be_false
+    end
+
+    it "should allow me to setup a condition that the layout is ignored on" do
+      @wrapt.ignore_layout do |env|
+        env['ignore_layout']
+      end
+
+      env = Rack::MockRequest.env_for("/")
+      env['ignore_layout'] = true
+
+      @wrapt.ignore_layout?(env).should be_true
+    end
+
     it "should provide a hook for me to work out the format to use"
   end
 
@@ -105,18 +121,17 @@ describe Wrapt do
   describe "injecting into the environment" do
     before do
       @wrapt = Wrapt.new(SpecWraptApp){|w| w.default_template = :wrapper}
+      @env = Rack::MockRequest.env_for("/")
     end
 
     it "should inject a Wrapt::Layout object into the environment" do
-      env = {}
-      @wrapt.call(env)
-      env['layout'].should be_an_instance_of(Wrapt::Layout)
+      @wrapt.call(@env)
+      @env['layout'].should be_an_instance_of(Wrapt::Layout)
     end
 
     it "should make sure there's a request.variables key in the env" do
-      env = {}
-      @wrapt.call(env)
-      vars = env['request.variables']
+      @wrapt.call(@env)
+      vars = @env['request.variables']
       vars.should_not be_nil
       vars.should respond_to(:[])
       vars.should respond_to(:[]=)
@@ -240,6 +255,72 @@ describe Wrapt do
       result = @layout.to_s
       result.should include("<div class='content'>Main Content</div>")
       result.should include("<div class='foo'>Foo Content</div>")
+    end
+
+    describe "integrated in a rack stack" do
+      include Rack::Test::Methods
+      before do
+        dirs = layouts_dirs
+        builder = Rack::Builder.new do
+          use Wrapt do |w|
+            w.default_template = "wrapper"
+            w.layout_dirs = dirs
+            w.ignore_layout do |e|
+              r = Rack::Request.new(e)
+              r.params['apply_layout'] == 'false'
+            end
+          end
+          run SpecWraptApp
+        end
+
+        @app = builder.to_app
+        $message = nil
+      end
+
+      def app
+        @app
+      end
+
+      it "should wrap the content in the layout" do
+        $message = "Content For This Page"
+        r = get "/"
+        r.body.should include("Wrapper Template")
+        r.body.should include("Content For This Page")
+      end
+
+      it "should not layout when there is an apply_layout=false parameter" do
+        $message = "Unwrapped Content"
+        r = get "/", :apply_layout => :false
+        r.body.should include("Unwrapped Content")
+        r.body.should_not include("Wrapper Template")
+      end
+
+      it "should layout when wrapping the applciation manually" do
+        $wrapped_content = nil
+        dirs = layouts_dirs
+        builder = Rack::Builder.new do
+          use Wrapt do |w|
+            w.default_template = "wrapper"
+            w.layout_dirs = dirs
+            w.ignore_layout do |e|
+              r = Rack::Request.new(e)
+              r.params['apply_layout'] == 'false'
+            end
+          end
+          run(lambda do |e|
+            layout = e['layout']
+            $wrapped_content = layout.wrap("Manual Wrap", :layout => "other")
+            layout.content = "Unwrapped Content"
+            Rack::Response.new(layout).finish
+          end)
+        end
+
+        @app = builder.to_app
+        result = get "/", :apply_layout => "false"
+        result.body.to_s.should == "Unwrapped Content"
+        $wrapped_content.should include("Manual Wrap")
+        $wrapped_content.should include("Other Template")
+      end
     end
   end
 end

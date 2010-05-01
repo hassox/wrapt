@@ -5,6 +5,7 @@ require 'spec'
 require 'spec/autorun'
 require 'rack'
 require 'haml'
+require 'rack/test'
 
 Spec::Runner.configure do |config|
 
