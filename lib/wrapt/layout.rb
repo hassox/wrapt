@@ -9,6 +9,7 @@ class Wrapt
       @wrapt = wrapt
       @request = Rack::Request.new(@env)
       @content_for = Hashie::Mash.new
+      @ignore_layout = nil
     end
 
     # Is the wrapt instance that created this layouter set as a master?
@@ -25,6 +26,12 @@ class Wrapt
     # @see Wrapt#default_format
     def format
       @format ||= @wrapt.default_format
+    end
+
+    # allows you to set the ignore_layout block for just this request (and anythin downstream)
+    #
+    def ignore_layout(&block)
+      @ignore_layout = block
     end
 
     # Gets the template name that this layouter has.
@@ -113,7 +120,13 @@ class Wrapt
     # The interface for rack.
     # @api public
     def each
-      result = render_layout(@wrapt.ignore_layout?(env))
+      ignore = if @ignore_layout
+        @ignore_layout.call(env)
+      else
+        @wrapt.ignore_layout?(env)
+      end
+
+      result = render_layout(ignore)
       yield result
       result
     end
