@@ -14,8 +14,18 @@ class Wrapt
 
     # Is the wrapt instance that created this layouter set as a master?
     # @see Wrapt#master?
+    # @api public
     def master?
       @wrapt.master?
+    end
+
+    # Check to see if there is a template of a given name and options
+    # for this layouter.
+    #
+    # @see Wrapt#template
+    # @api public
+    def template_name?(name, opts = {})
+      !!@wrapt.template(name, opts)
     end
 
     # Gets the format that this layouter has been set to.
@@ -142,7 +152,7 @@ class Wrapt
       template = @wrapt.template(template, opts)
 
       output = if template
-        template.render(LayoutContext.new) do |*args|
+        template.render(LayoutContext.new(env)) do |*args|
           label = args.first || :content
           content_for[label]
         end

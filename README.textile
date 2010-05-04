@@ -93,6 +93,19 @@ You can also select the layout to use inside a request.  The following sets the 
 end
 </code></pre>
 
+Ask the layout to check if a given layout is available.  You can then decide if you want to use that, or leave it as is.
+
+<pre><code>def call(env)
+  content = generate_content_somehow
+  layout = env['layout']
+  layout.template_name = 'error' if layout.template_name?('error')
+
+  layout.content = content
+  Rack::Response.new(layout).finish
+end
+</code></pre>
+
+
 h3. Format
 
 Layouts are associated with a format.  By default the format is html.  Tempaltes are selected by their name with <name>.<format>.<template_type>.

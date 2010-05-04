@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.6}
 
-  s.files = Dir[File.join('.', "**/*")]
+  s.files = Dir["**/*"]
 
   s.add_dependency 'tilt'
   s.add_dependency 'hashie'

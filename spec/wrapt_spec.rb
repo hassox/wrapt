@@ -322,5 +322,19 @@ describe Wrapt do
         $wrapped_content.should include("Other Template")
       end
     end
+
+    it "should respond true to a question for a template when there is one defined" do
+      env = Rack::MockRequest.env_for("/")
+      @wrapt.call(env)
+      layout = env['layout']
+      layout.template_name?(:wrapper).should be_true
+    end
+
+    it "Shoudl respond false to a question for a template when there is one defined" do
+      env = Rack::MockRequest.env_for("/")
+      @wrapt.call(env)
+      layout = env['layout']
+      layout.template_name?(:not_a_template).should be_false
+    end
   end
 end
