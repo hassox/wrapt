@@ -1,6 +1,6 @@
 source :rubygems
 
-gem 'tilt',     :git  => 'git://github.com/hassox/tilt.git', :branch => :hassox
+gem 'pancake', '>=0.2'
 
 gem 'hashie'
 
