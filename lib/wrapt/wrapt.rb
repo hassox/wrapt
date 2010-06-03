@@ -35,12 +35,14 @@ class Wrapt
   #   Default format, default layout or declare the layouter as the "master"
   #
   # @see Wrapt#master!
+  # @see Wrapt#defer!
   # @see Wrapt#layout_dirs
   # @see Wrapt#default_format
   # @see Wrapt#default_template
   def initialize(app)
-    @app = app
+    @app    = app
     @master = false
+    @defer  = false
     yield self if block_given?
   end
 
@@ -54,9 +56,22 @@ class Wrapt
   end
 
   # Checks to see if this layouter is a master
-  # @api private
+  # @api public
   def master?
     !!@master
+  end
+
+  # Defers this layout.  Meaning that if there is another layout already in the environment
+  # That should be used and this one should do nothing.
+  # @api public
+  def defer!
+    @defer = true
+  end
+
+  # Checks to see if this mdidleware should be defered
+  # @api public
+  def defered?
+    !!@defer
   end
 
   # Wrapt allows you to ignore layouts from the client side.
@@ -95,7 +110,7 @@ class Wrapt
   def call(env)
     env['request.variables'] ||= Hashie::Mash.new
     layout = env['layout']
-    if !layout || (layout && !layout.master?)
+    if !layout || (!self.defered? && !layout.master?)
       env['layout'] = Layout.new(self, env)
     end
     r = @app.call(env) # just return what the app returns… If it wants a layout, it will return it.

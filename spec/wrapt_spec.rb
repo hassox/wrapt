@@ -120,7 +120,10 @@ describe Wrapt do
 
   describe "injecting into the environment" do
     before do
-      @wrapt = Wrapt.new(SpecWraptApp){|w| w.default_template = :wrapper}
+      @wrapt = Wrapt.new(SpecWraptApp){|w|
+        w.default_template = :wrapper
+        w.layout_dirs = layouts_dirs
+      }
       @env = Rack::MockRequest.env_for("/")
     end
 
@@ -172,6 +175,24 @@ describe Wrapt do
       result.should include("{ content")
       layout = env['layout']
       layout.wrapt.should == @wrapt
+    end
+
+    it "should allow me to add a default layout that is not used when there is an upstream layout" do
+      env = Rack::MockRequest.env_for("/foo.html")
+
+      wrapt2 = Wrapt.new(SpecWraptApp) do |wrapt|
+        wrapt.defer!
+        wrapt.default_template = :other
+        wrapt.layout_dirs = layouts_dirs
+      end
+
+      s = @wrapt.call(env)
+      env['layout'].should_not be_nil
+      r = wrapt2.call(env)
+
+      result = r[2].body.to_s
+      result.should include("Wrapper Template")
+      result.should_not include("Other template")
     end
   end
 
